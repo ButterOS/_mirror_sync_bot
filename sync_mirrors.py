@@ -13,8 +13,7 @@ import os
 import sys
 import subprocess
 import tempfile
-import shutil
-from typing import List, Dict, Optional
+from typing import List, Dict
 import requests
 
 
@@ -109,12 +108,15 @@ class MirrorSyncBot:
             try:
                 # Clone the source repository (bare clone for mirroring)
                 print(f"Cloning source repository...")
-                subprocess.run(
+                result = subprocess.run(
                     ["git", "clone", "--mirror", source_url, temp_dir],
-                    check=True,
                     capture_output=True,
                     text=True
                 )
+                if result.returncode != 0:
+                    raise subprocess.CalledProcessError(
+                        result.returncode, result.args, result.stdout, result.stderr
+                    )
                 
                 # Set up authentication for pushing to mirror
                 mirror_url_with_auth = mirror_url.replace(
@@ -124,24 +126,33 @@ class MirrorSyncBot:
                 
                 # Push to mirror
                 print(f"Pushing to mirror repository...")
-                subprocess.run(
+                result = subprocess.run(
                     ["git", "-C", temp_dir, "push", "--mirror", mirror_url_with_auth],
-                    check=True,
                     capture_output=True,
                     text=True
                 )
+                if result.returncode != 0:
+                    raise subprocess.CalledProcessError(
+                        result.returncode, result.args, result.stdout, result.stderr
+                    )
                 
                 print(f"✓ Successfully synced {repo_name}")
                 return True
                 
             except subprocess.CalledProcessError as e:
                 print(f"✗ Error syncing {repo_name}:")
-                print(f"  Command: {' '.join(e.cmd)}")
+                # Sanitize command output to avoid exposing tokens
+                sanitized_cmd = ' '.join(e.cmd).replace(self.github_token, "***TOKEN***")
+                print(f"  Command: {sanitized_cmd}")
                 print(f"  Return code: {e.returncode}")
                 if e.stdout:
-                    print(f"  Stdout: {e.stdout}")
+                    # Sanitize stdout
+                    sanitized_stdout = e.stdout.replace(self.github_token, "***TOKEN***")
+                    print(f"  Stdout: {sanitized_stdout}")
                 if e.stderr:
-                    print(f"  Stderr: {e.stderr}")
+                    # Sanitize stderr
+                    sanitized_stderr = e.stderr.replace(self.github_token, "***TOKEN***")
+                    print(f"  Stderr: {sanitized_stderr}")
                 return False
     
     def sync_all_mirrors(self):
