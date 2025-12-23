@@ -1,0 +1,45 @@
+name: Sync Mirrors
+
+# IMPORTANT: This workflow requires a MIRROR_SYNC_TOKEN secret with write access
+# to all mirror repositories in the organization. The default GITHUB_TOKEN only
+# has write access to this repository and cannot push to other repos.
+# See README.md for token setup instructions.
+
+on:
+  schedule:
+    # Run once a day at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  sync-mirrors:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "mirror-sync-bot[bot]"
+          git config --global user.email "mirror-sync-bot[bot]@users.noreply.github.com"
+      
+      - name: Sync all mirrors
+        env:
+          GITHUB_TOKEN: ${{ secrets.MIRROR_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+          GITHUB_ORGANIZATION: ${{ github.repository_owner }}
+        run: |
+          python sync_mirrors.py
