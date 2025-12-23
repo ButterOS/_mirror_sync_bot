@@ -21,9 +21,31 @@ For each mirror repository, configure the following custom properties:
 
 ### Permissions
 
-The workflow requires the following permissions:
-- `contents: write` - To push updates to mirror repositories
-- Access to organization custom properties
+The workflow requires a GitHub token with write access to all mirror repositories in the organization. 
+
+**Important**: The default `GITHUB_TOKEN` provided by GitHub Actions only has write access to the repository where the workflow runs. To push to other repositories in the organization, you must use a **Personal Access Token (PAT)** or **GitHub App** with the following permissions:
+
+#### Option 1: Personal Access Token (Classic)
+Create a PAT with these scopes:
+- `repo` (Full control of private repositories)
+- `read:org` (Read organization membership and custom properties)
+
+#### Option 2: Fine-grained Personal Access Token
+Create a fine-grained PAT with:
+- Repository permissions: `Contents: Read and Write`, `Metadata: Read`
+- Organization permissions: `Custom properties: Read`
+- Grant access to all mirror repositories or the entire organization
+
+#### Option 3: GitHub App (Recommended for organizations)
+Create a GitHub App with:
+- Repository permissions: `Contents: Read and Write`, `Metadata: Read`
+- Organization permissions: `Custom properties: Read`
+- Install the app on the organization with access to mirror repositories
+
+**Setup**:
+1. Create a PAT or GitHub App following one of the options above
+2. Add it as a repository secret named `MIRROR_SYNC_TOKEN`
+3. Update the workflow to use this token instead of `GITHUB_TOKEN`
 
 ### Manual Trigger
 

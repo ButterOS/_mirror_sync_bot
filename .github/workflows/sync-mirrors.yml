@@ -1,5 +1,10 @@
 name: Sync Mirrors
 
+# IMPORTANT: This workflow requires a MIRROR_SYNC_TOKEN secret with write access
+# to all mirror repositories in the organization. The default GITHUB_TOKEN only
+# has write access to this repository and cannot push to other repos.
+# See README.md for token setup instructions.
+
 on:
   schedule:
     # Run once a day at 2 AM UTC
@@ -35,7 +40,7 @@ jobs:
       
       - name: Sync all mirrors
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MIRROR_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
           GITHUB_ORGANIZATION: ${{ github.repository_owner }}
         run: |
           python sync_mirrors.py
