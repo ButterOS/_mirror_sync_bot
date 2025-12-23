@@ -1,0 +1,40 @@
+name: Sync Mirrors
+
+on:
+  schedule:
+    # Run once a day at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  sync-mirrors:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "mirror-sync-bot[bot]"
+          git config --global user.email "mirror-sync-bot[bot]@users.noreply.github.com"
+      
+      - name: Sync all mirrors
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ORGANIZATION: ${{ github.repository_owner }}
+        run: |
+          python sync_mirrors.py
